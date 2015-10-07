@@ -25,9 +25,10 @@ class Screen(object):
         return cv2.inRange(inputImageInHSV, shapeFilterDown, shapeFilterUp)
 
     def redFilter(self, inputImageInHSV):
-        redFilterDown = np.array([0,70,50])
-        redFilterUp = np.array([50,255,255])
-        return cv2.inRange(inputImageInHSV,redFilterDown,redFilterUp)
+        lower = cv2.inRange(inputImageInHSV, np.array([0, 60, 60]), np.array([20, 255, 255]))
+        upper = cv2.inRange(inputImageInHSV, np.array([160, 60, 60]), np.array([179, 255, 255]))
+        return cv2.addWeighted(lower, 1.0, upper, 1.0, 0.0)
+
 
     def blueFilter(self, inputImageInHSV):
         blueFilterDown = np.array([50,50,50])
@@ -49,23 +50,20 @@ class Screen(object):
         edgefile = self.out_dir + '/' + self.screen_name + ".edg." + self.out_format
 
         img = cv2.imread(fname)
-
+        hsv = cv2.medianBlur(img, 5)
         # converting to HSV color-space
-        hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+        hsv = cv2.cvtColor(hsv, cv2.COLOR_BGR2HSV)
         # thresholding blue signs
         hsv = self.redFilter(hsv)
+        hsv = cv2.medianBlur(hsv, 5)
         # debug write
         cv2.imwrite(hsvfile, hsv)
 
-        # contour detection
-        edgeImg = cv2.Canny(hsv, 0, 200)
-        cv2.imwrite(edgefile, edgeImg)
+        circles = cv2.HoughCircles(hsv, cv2.cv.CV_HOUGH_GRADIENT, 1, 20, param1=50, param2=30, minRadius=10, maxRadius=100)
 
-        contours, _ = cv2.findContours(hsv, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        if circles is not None:
+            circles = np.round(circles[0, :]).astype("int")
+            for (x, y, r) in circles:
+                cv2.rectangle(img, (x - 5 - r, y - 5 - r), (x + 5 + r, y + 5 + r), (0, 128, 255), 3)
 
-        drawing = np.zeros(img.shape)
-        for i in xrange(len(contours)):
-            if cv2.contourArea(contours[i]) < 5000:  # just a condition
-                cv2.drawContours(drawing, contours, i, (255, 0, 255), 1, 8)
-
-        cv2.imwrite(outfile, drawing)
+        cv2.imwrite(outfile, img)
