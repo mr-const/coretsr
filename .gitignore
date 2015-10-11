@@ -1,3 +1,5 @@
+# processed data is ignored
+data/processed/*
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

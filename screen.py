@@ -25,8 +25,8 @@ class Screen(object):
         return cv2.inRange(inputImageInHSV, shapeFilterDown, shapeFilterUp)
 
     def redFilter(self, inputImageInHSV):
-        lower = cv2.inRange(inputImageInHSV, np.array([0, 60, 60]), np.array([20, 255, 255]))
-        upper = cv2.inRange(inputImageInHSV, np.array([160, 60, 60]), np.array([179, 255, 255]))
+        lower = cv2.inRange(inputImageInHSV, np.array([0, 110, 110]), np.array([15, 255, 255]))
+        upper = cv2.inRange(inputImageInHSV, np.array([165, 110, 110]), np.array([179, 255, 255]))
         return cv2.addWeighted(lower, 1.0, upper, 1.0, 0.0)
 
 
@@ -40,30 +40,47 @@ class Screen(object):
         yellowFilterUp = np.array([35,255,255])
         return cv2.inRange(inputImageInHSV, yellowFilterDown, yellowFilterUp)
 
-    def __init__(self, fname, screen_name, out_dir="out", out_format="png"):
-        self.fname = fname
-        self.screen_name = screen_name
-        self.out_format = out_format
-        self.out_dir = out_dir
-        outfile = self.out_dir + '/' + self.screen_name + "." + self.out_format
-        hsvfile = self.out_dir + '/' + self.screen_name + ".hsv." + self.out_format
-        edgefile = self.out_dir + '/' + self.screen_name + ".edg." + self.out_format
+    def gamma_correction(self, img, correction):
+        img = img/255.0
+        img = cv2.pow(img, correction)
+        return np.uint8(img*255)
 
-        img = cv2.imread(fname)
-        hsv = cv2.medianBlur(img, 5)
+    def _do_hsv(self, img):
         # converting to HSV color-space
-        hsv = cv2.cvtColor(hsv, cv2.COLOR_BGR2HSV)
-        # thresholding blue signs
+        hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+        # thresholding red sign
         hsv = self.redFilter(hsv)
         hsv = cv2.medianBlur(hsv, 5)
+        hsv = cv2.Canny(hsv, 5, 70)
         # debug write
-        cv2.imwrite(hsvfile, hsv)
+        cv2.imwrite(self.hsvfile, hsv)
 
-        circles = cv2.HoughCircles(hsv, cv2.cv.CV_HOUGH_GRADIENT, 1, 20, param1=50, param2=30, minRadius=10, maxRadius=100)
+        circles = cv2.HoughCircles(hsv, cv2.cv.CV_HOUGH_GRADIENT, 1, 20, param1=100, param2=30, minRadius=2)
 
         if circles is not None:
             circles = np.round(circles[0, :]).astype("int")
             for (x, y, r) in circles:
                 cv2.rectangle(img, (x - 5 - r, y - 5 - r), (x + 5 + r, y + 5 + r), (0, 128, 255), 3)
 
-        cv2.imwrite(outfile, img)
+        cv2.imwrite(self.outfile, img)
+
+    def _do_bgr(self, img):
+        r_thresh = 50
+
+    def __init__(self, fname, screen_name, out_dir="out", out_format="png"):
+        self.fname = fname
+        self.screen_name = screen_name
+        self.out_format = out_format
+        self.out_dir = out_dir
+        self.outfile = self.out_dir + '/' + self.screen_name + "." + self.out_format
+        self.edgefile = self.out_dir + '/' + self.screen_name + ".edg." + self.out_format
+        self.gamfile = self.out_dir + '/' + self.screen_name + ".gam." + self.out_format
+        self.hsvfile = self.out_dir + '/' + self.screen_name + ".hsv." + self.out_format
+
+        img = cv2.imread(fname)
+        img = self.gamma_correction(img, 0.7)
+        # debug write
+        cv2.imwrite(self.gamfile, img)
+
+        img = cv2.medianBlur(img, 5)
+        self._do_hsv(img)
