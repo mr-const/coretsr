@@ -73,17 +73,27 @@ class Screen(object):
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         kern = cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(5,5))
         gray = cv2.morphologyEx(gray, cv2.MORPH_OPEN, kern)
-        gray = cv2.Canny(gray, 5, 70)
+        gray = cv2.Canny(gray, 50, 200)
+        contours, _ = cv2.findContours(gray, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+        cont_img = np.zeros(gray.shape, np.uint8)
+        for cnt in contours:
+            # debug output
+            # cv2.drawContours(cont_img, contours, i, (255, 0, 255), 1, 8)
+            approx = cv2.approxPolyDP(cnt, 0.02 * cv2.arcLength(cnt, True), True)
+            if approx.size == 3:
+                cv2.polylines(cont_img, approx, True, (255, 0, 255), 1)
         # debug write
-        cv2.imwrite(self.edgefile, gray)
+        cv2.imwrite(self.edgefile, cont_img)
+
 
         # filtering lines
-        lines = cv2.HoughLinesP(gray, 1, np.pi / 180, 10, minLineLength=15, maxLineGap=5)
-        if not lines is None:
-            # const: uncomment for debug
-            for x1, y1, x2, y2 in lines[0]:
-                cv2.line(img, (x1, y1), (x2, y2), (255, 255, 0, 0), 1)
-            cv2.imwrite(self.gamfile, img)
+        # lines = cv2.HoughLinesP(cont_img, 2, 3*np.pi / 180, 5, minLineLength=30, maxLineGap=10)
+        # if not lines is None:
+        #     # const: uncomment for debug
+        #     for x1, y1, x2, y2 in lines[0]:
+        #         cv2.line(img, (x1, y1), (x2, y2), (255, 255, 0, 0), 1)
+        #     cv2.imwrite(self.gamfile, img)
 
     def __init__(self, fname, screen_name, out_dir="out", out_format="png"):
         self.fname = fname
