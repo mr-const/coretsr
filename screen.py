@@ -69,6 +69,22 @@ class Screen(object):
     def _do_bgr(self, img):
         r_thresh = 50
 
+    def _shape_detection(self, img):
+        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        kern = cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(5,5))
+        gray = cv2.morphologyEx(gray, cv2.MORPH_OPEN, kern)
+        gray = cv2.Canny(gray, 5, 70)
+        # debug write
+        cv2.imwrite(self.edgefile, gray)
+
+        # filtering lines
+        lines = cv2.HoughLinesP(gray, 1, np.pi / 180, 10, minLineLength=15, maxLineGap=5)
+        if not lines is None:
+            # const: uncomment for debug
+            for x1, y1, x2, y2 in lines[0]:
+                cv2.line(img, (x1, y1), (x2, y2), (255, 255, 0, 0), 1)
+            cv2.imwrite(self.gamfile, img)
+
     def __init__(self, fname, screen_name, out_dir="out", out_format="png"):
         self.fname = fname
         self.screen_name = screen_name
@@ -85,4 +101,5 @@ class Screen(object):
         cv2.imwrite(self.gamfile, img)
 
         img = cv2.medianBlur(img, 5)
-        self._do_hsv(img)
+        #self._do_hsv(img)
+        self._shape_detection(img)
