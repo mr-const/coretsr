@@ -55,12 +55,14 @@ class Screen(object):
         # debug write
         cv2.imwrite(self.hsvfile, hsv)
 
-        circles = cv2.HoughCircles(hsv, cv2.cv.CV_HOUGH_GRADIENT, 1, 20, param1=100, param2=30, minRadius=2)
+        circles = cv2.HoughCircles(hsv, cv2.cv.CV_HOUGH_GRADIENT, 1, 35, minRadius=10, maxRadius=150, param1=100, param2=30)
 
+        rect_offset = 3
+        rect_width = 2
         if circles is not None:
             circles = np.round(circles[0, :]).astype("int")
             for (x, y, r) in circles:
-                cv2.rectangle(img, (x - 5 - r, y - 5 - r), (x + 5 + r, y + 5 + r), (0, 128, 255), 3)
+                cv2.rectangle(img, (x - rect_offset - r, y - rect_offset - r), (x + rect_offset + r, y + rect_offset + r), (0, 128, 255), rect_width)
 
         cv2.imwrite(self.outfile, img)
 

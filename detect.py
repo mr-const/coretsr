@@ -8,7 +8,7 @@ from glob import glob
 __author__ = 'Konst Kolesnichenko'
 
 if __name__ == '__main__':
-    fnames = "data/many-limits.jpg" if len(sys.argv) <= 1 else sys.argv[1]
+    fnames = "data/*.jpg" if len(sys.argv) <= 1 else sys.argv[1]
     out_format = "png" if len(sys.argv) <= 2 else sys.argv[2]
     out_dir = "data/processed/"
 
